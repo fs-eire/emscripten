@@ -10633,5 +10633,5 @@ kill -9 $$
 
   def test_explict_gl_linking(self):
     # ensure libgl exists
-    self.run_process([EMBUILDER, 'build', 'libgl'])
+    self.run_process([EMBUILDER, 'build', 'libGL'])
     self.run_process([EMCC, test_file('other/test_explict_gl_linking.c'), '-sNO_AUTO_NATIVE_LIBRARIES', '-lGL'])

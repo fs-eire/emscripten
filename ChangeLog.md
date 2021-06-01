@@ -20,6 +20,11 @@ See docs/process.md for more on how version tagging works.
 
 2.0.24
 ------
+- Interally the `libgl` family of libraries was renamed to `libGL`.  This should
+  not be a visible change as `-lGL` as always been the way to include this
+  library.  Anyone who uses `embuilder` to build this library specifiecally
+  would need to change from `embuilder build libgl..` to `embuilder build
+  libGL..` (#14351).
 - Support `--preload-file` in Node.js. (#11785)
 - System libraries are now passed to the linker internally via `-lfoo` rather
   than using their full path.  This is in line with how gcc and clang pass system
