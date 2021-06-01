@@ -35,7 +35,7 @@ from tools.shared import CLANG_CC, CLANG_CXX, LLVM_AR, LLVM_DWARFDUMP, EMCMAKE, 
 from runner import RunnerCore, path_from_root, is_slow_test, ensure_dir, disabled, make_executable
 from runner import env_modify, no_mac, no_windows, requires_native_clang, with_env_modify
 from runner import create_file, parameterized, NON_ZERO, node_pthreads, TEST_ROOT, test_file
-from runner import compiler_for, read_file, read_binary
+from runner import compiler_for, read_file, read_binary, EMBUILDER
 from tools import shared, building, utils, deps_info
 import jsrun
 import clang_native
@@ -10630,3 +10630,8 @@ kill -9 $$
   def test_bad_export_name(self):
     err = self.expect_fail([EMCC, '-sEXPORT_NAME=foo bar', test_file('hello_world.c')])
     self.assertContained('error: EXPORT_NAME is not a valid JS identifier: `foo bar`', err)
+
+  def test_explict_gl_linking(self):
+    # ensure libgl exists
+    self.run_process([EMBUILDER, 'build', 'libgl'])
+    self.run_process([EMCC, test_file('other/test_explict_gl_linking.c'), '-sNO_AUTO_NATIVE_LIBRARIES', '-lGL'])

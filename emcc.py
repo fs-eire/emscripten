@@ -1053,7 +1053,7 @@ There is NO warranty; not even for MERCHANTABILITY or FITNESS FOR A PARTICULAR P
   if state.mode == Mode.POST_LINK_ONLY:
     settings.limit_settings(None)
     target, wasm_target = phase_linker_setup(options, state, newargs, settings_map)
-    process_libraries(state.libs, state.lib_dirs, [])
+    process_libraries(state, [])
     if len(input_files) != 1:
       exit_with_error('--post-link requires a single input file')
     phase_post_link(options, state, input_files[0][1], wasm_target, target)
@@ -1116,7 +1116,7 @@ def phase_calculate_linker_inputs(options, state, linker_inputs):
   state.link_flags = filter_link_flags(state.link_flags, using_lld)
 
   # Decide what we will link
-  consumed = process_libraries(state.libs, state.lib_dirs, linker_inputs)
+  consumed = process_libraries(state, linker_inputs)
   # Filter out libraries that are actually JS libs
   state.link_flags = [l for l in state.link_flags if l[0] not in consumed]
 
@@ -3506,32 +3506,32 @@ def find_library(lib, lib_dirs):
   return None
 
 
-def process_libraries(libs, lib_dirs, linker_inputs):
+def process_libraries(state, linker_inputs):
   libraries = []
   consumed = []
   suffixes = STATICLIB_ENDINGS + DYNAMICLIB_ENDINGS
 
   # Find library files
-  for i, lib in libs:
+  for i, lib in state.libs:
     logger.debug('looking for library "%s"', lib)
 
-    path = None
-    for suff in suffixes:
-      name = 'lib' + lib + suff
-      path = find_library(name, lib_dirs)
-      if path:
-        break
-
-    if path:
-      linker_inputs.append((i, path))
+    js_libs, native_lib = building.map_to_js_libs(lib)
+    if js_libs is not None:
+      consumed.append(i)
+      libraries += [(i, js_lib) for js_lib in js_libs]
+      # If native_lib is returned then include it in the link
+      # via forced_stdlibs.
+      if native_lib:
+        state.forced_stdlibs.append(native_lib)
+    elif building.map_and_apply_to_settings(lib):
       consumed.append(i)
     else:
-      jslibs = building.map_to_js_libs(lib)
-      if jslibs is not None:
-        libraries += [(i, jslib) for jslib in jslibs]
-        consumed.append(i)
-      elif building.map_and_apply_to_settings(lib):
-        consumed.append(i)
+      for suff in suffixes:
+        name = 'lib' + lib + suff
+        path = find_library(name, state.lib_dirs)
+        if path:
+          linker_inputs.append((i, path))
+          consumed.append(i)
 
   settings.SYSTEM_JS_LIBRARIES += libraries
 
